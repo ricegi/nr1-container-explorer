@@ -1,4 +1,4 @@
-import { Stack, StackItem, Dropdown, DropdownItem, Button } from 'nr1';
+import { Radio, RadioGroup, Spinner, Stack, StackItem, Dropdown, DropdownItem, Button } from 'nr1';
 import PLOTS from '../../lib/plots';
 
 function AccountPicker({ accounts, account, setAccount }) {
@@ -32,6 +32,32 @@ function PlotPicker({ group, counts, plot, setPlot }) {
   return null;
 }
 
+
+function AppPicker({ apps, app, setApp }) {
+
+  if ( apps === undefined ) {
+
+    return(
+      <Spinner/>
+    );
+  } //if
+  else {
+    return(
+      <Dropdown label="Application" title={app}>
+        {apps.map(_app => {
+  
+          return(
+            <DropdownItem onClick={() => setApp(_app)} key={_app}>
+                {_app}
+            </DropdownItem>
+          );
+        })}
+      </Dropdown>
+    );
+  }
+
+} //AppPicker
+
 export default function Header(props) {
   const { counts, removeAllFilters, filters } = props;
   return (
@@ -46,8 +72,17 @@ export default function Header(props) {
             <StackItem>
               <AccountPicker {...props} />
             </StackItem>
+            <StackItem>
+              <AppPicker {...props}/>
+            </StackItem>
             <StackItem className="plot-picker-stack-item">
               <PlotPicker {...props}></PlotPicker>
+            </StackItem>
+            <StackItem className="plot-picker-stack-item">
+              <RadioGroup defaultValue="2">
+                <Radio label="Containers" value="1" />
+                <Radio label="Hosts" value="2" />
+              </RadioGroup>
             </StackItem>
           </Stack>
         </StackItem>

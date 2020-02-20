@@ -82,9 +82,19 @@ export default class ContainerExplorer extends React.Component {
 
   async componentDidUpdate({ where, account }) {
     if (where != this.props.where || account != this.props.account) {
+
       await this.reload();
     }
   }
+
+  async shouldComponentUpdate(nextProps) {
+
+    if (this.props.launcherUrlState.timeRange !== nextProps.launcherUrlState.timeRange) {
+      return(true);
+    } //if
+
+    return(false);
+  }//shouldComponentUpdate
 
   async reload() {
     clearInterval(this.interval);
@@ -99,8 +109,8 @@ export default class ContainerExplorer extends React.Component {
 
     this.setState({ groups: null });
     const { where, account, counts } = this.props;
-    const timeWindow = 'SINCE 3 minutes ago';
 
+    const timeWindow = 'SINCE 3 minutes ago';
     const facets = await getCardinality({
       eventType: 'ProcessSample',
       accountId: account.id,
@@ -151,12 +161,12 @@ export default class ContainerExplorer extends React.Component {
           }`}
           spacingType={[Grid.SPACING_TYPE.NONE, Grid.SPACING_TYPE.NONE]}
         >
-          {!groups && (
+          {/*!groups && (
             <GridItem className="facet-list-container-grid" columnSpan={3}>
               <Spinner />
             </GridItem>
-          )}
-          {groups && (
+          )*/}
+          {/* groups && (
             <GridItem className="facet-list-container-grid" columnSpan={3}>
               <GroupList
                 groups={groups}
@@ -165,10 +175,10 @@ export default class ContainerExplorer extends React.Component {
                 selectGroup={this.setGroup}
               />
             </GridItem>
-          )}
+          )*/ /* BELOW changed panel detail from 6/9 to 9/12 for full screen no Grouping logic */}
           <GridItem
             className="container-explorer-container"
-            columnSpan={containerId && !detailPanelExpanded ? 6 : 9}
+            columnSpan={containerId && !detailPanelExpanded ? 9 : 12}
           >
             <div className="filters-container">
               {filters.map(filterProps => {

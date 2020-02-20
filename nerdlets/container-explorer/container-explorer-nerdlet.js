@@ -1,15 +1,17 @@
 import React from 'react';
-import { Spinner } from 'nr1';
+import { PlatformStateContext, Spinner } from 'nr1';
 import { EmptyState } from '@newrelic/nr1-community';
 
 import quote from '../../lib/quote';
 import nrdbQuery from '../../lib/nrdb-query';
 import findRelatedAccountsWith from '../../lib/find-related-account-with';
+import accountAppList from '../../lib/account-app-list';
 
 import ContainerExplorer from './container-explorer';
 import Header from './header';
 
 import PLOTS from '../../lib/plots';
+
 
 export default class ContainerExplorerNerdlet extends React.Component {
   constructor(props) {
@@ -19,6 +21,7 @@ export default class ContainerExplorerNerdlet extends React.Component {
     this.removeFilter = this.removeFilter.bind(this);
     this.setAccount = this.setAccount.bind(this);
     this.setPlot = this.setPlot.bind(this);
+    this.setApp = this.setApp.bind(this);
     this.setGroup = this.setGroup.bind(this);
     this.removeAllFilters = this.removeAllFilters.bind(this);
 
@@ -39,13 +42,36 @@ export default class ContainerExplorerNerdlet extends React.Component {
 
     if (accounts.length > 0) {
       this.countProcesses();
+
+      //get the initial list of apps
+      const __account = this.state.account;
+      const apps = await accountAppList(__account);
+      await this.setState({ apps, app: apps[0] }); //set the available app context
     }
+
   }
 
   async addFilter(name, value) {
     const { filters } = this.state;
     filters.push({ name, value });
-    await this.setFilters(filters);
+
+    if (name === 'apmApplicationNames') {
+      
+      if (value === "All") {
+
+        await this.removeAllFilters();
+      } //if
+      else {
+
+        await this.setAppFilters(filters);
+      } //else
+
+    }//if
+    else {
+      
+      await this.setFilters(filters);
+    } //else
+
   }
 
   async removeFilter(name, value) {
@@ -71,6 +97,19 @@ export default class ContainerExplorerNerdlet extends React.Component {
     this.countProcesses();
   }
 
+  async setAppFilters(filters) {
+
+    let where = null;
+    if (filters != null && filters.length > 0) {
+      where = filters
+        .map(({ name, value }) => `${quote(name)} LIKE  '%|${value}|%'`)
+        .join(' AND ');
+    }
+
+    await this.setState({ filters, where });
+    this.countProcesses();
+  } //setAppFilters
+
   async setAccount(account) {
     await this.setState({ account, filters: [], where: null, counts: null });
     this.countProcesses();
@@ -79,6 +118,12 @@ export default class ContainerExplorerNerdlet extends React.Component {
   async setPlot(plot) {
     await this.setState({ plot });
   }
+
+  async setApp(app) {
+    
+    await this.setState({ app });
+    await this.addFilter("apmApplicationNames", app);
+  } //setApp
 
   async setGroup(group) {
     await this.setState({ group });
@@ -100,7 +145,7 @@ export default class ContainerExplorerNerdlet extends React.Component {
   }
 
   render() {
-    const { account, counts, accounts } = this.state;
+    const { account, counts, accounts, apps, app } = this.state; 
 
     if (!accounts) {
       return <Spinner />;
@@ -121,26 +166,36 @@ export default class ContainerExplorerNerdlet extends React.Component {
     }
 
     return (
-      <div style={{ height: '100%' }}>
-        <Header
-          {...this.state}
-          setAccount={this.setAccount}
-          showFacetPicker={this.showFacetPicker}
-          removeFilter={this.removeFilter}
-          removeAllFilters={this.removeAllFilters}
-          setPlot={this.setPlot}
-        />
-        {counts && (
-          <ContainerExplorer
-            launcherUrlState={this.props.launcherUrlState}
-            {...this.state}
-            addFilter={this.addFilter}
-            removeFilter={this.removeFilter}
-            setPlot={this.setPlot}
-            setGroup={this.setGroup}
-          />
-        )}
-      </div>
+      <PlatformStateContext.Consumer>
+        {platformUrlState => {
+          return(
+            <div style={{ height: '100%' }}>
+              <Header
+                {...this.state}
+                setAccount={this.setAccount}
+                showFacetPicker={this.showFacetPicker}
+                removeFilter={this.removeFilter}
+                removeAllFilters={this.removeAllFilters}
+                setPlot={this.setPlot}
+                setApp={this.setApp}
+                timeRange={platformUrlState.timeRange}
+
+              />
+              {counts && (
+                <ContainerExplorer
+                  launcherUrlState={this.props.launcherUrlState}
+                  {...this.state}
+                  addFilter={this.addFilter}
+                  removeFilter={this.removeFilter}
+                  setPlot={this.setPlot}
+                  setGroup={this.setGroup}
+                  setApp={this.setApp}
+                />
+              )}
+            </div>
+          )
+        }}
+      </PlatformStateContext.Consumer>
     );
   }
 }
